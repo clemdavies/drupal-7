@@ -1,0 +1,17 @@
+; clemtheme.info
+name = Clem Theme
+description = My first attempt at theme
+core = 7.x
+
+stylesheets[all][] = css/layout.css
+stylesheets[all][] = css/style.css
+stylesheets[all][] = css/colors.css
+
+; default regions
+regions[sidebar_first] = Left sidebar
+regions[sidebar_second] = Right sidebar
+regions[content] = Content
+regions[header] = Header
+regions[footer] = Footer
+regions[highlighted] = Highlighted
+regions[help] = Help

@@ -1,0 +1,123 @@
+/*
+  layout.css
+
+  positioning styles
+*/
+
+
+html,
+body,
+#page-wrapper,
+#page
+{
+  height: 100%;
+  margin:0;
+}
+
+#header-wrapper,
+#page-wrapper
+{
+  min-height: 100%;
+  min-width: 960px;
+}
+
+#header,
+#footer,
+#main
+{
+  width:960px;
+  margin: 0 auto;
+}
+#name-and-slogan
+{
+  float:right;
+}
+#main-menu
+{
+  clear:both;
+}
+#secondary-menu
+{
+  text-align:right;
+}
+
+
+#main-menu li
+{
+  display:inline-block;
+  list-style: none;
+  list-style-image: none;
+}
+#header ul
+{
+  margin:0;
+  padding:0;
+}
+
+#header
+{
+  border:solid red 1px;
+  padding:10px 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* CLEAR FIX*/
+
+html, body, #clearfix-wrapper
+{
+    height: 100%;
+}
+
+#clearfix-wrapper
+{
+    height: auto;
+    min-height: 100%;
+}
+
+
+#footer-wrapper{
+  position: relative;
+  margin-top: -50px; /* negative value of footer height */
+  height: 50px;
+  clear:both;
+}
+#clearfix
+{
+  padding-bottom: 50px;
+}
+#clearfix:after
+{
+    content: ".";
+    display: block;
+    height: 0;
+    clear: both !important;
+    visibility: hidden;
+}
+#clearfix
+{
+    display: inline-block;
+}
+/* Hides from IE-mac */
+* html #clearfix
+{
+    height: 1%;
+}
+#clearfix
+{
+    display: block;
+}
+/* End hide from IE-mac */

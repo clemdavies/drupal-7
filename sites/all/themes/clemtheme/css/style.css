@@ -1,0 +1,27 @@
+/*
+  style.css
+
+  fonts styles
+*/
+
+#site-name
+{
+  font-size:2.5em;
+  font-family:'Audiowide',Georgia,serif;
+}
+#site-name a
+{
+  text-decoration:none;
+}
+#site-slogan
+{
+  font-size:1em;
+  font-family:'Josefin Slab',serif;
+}
+
+#main-menu a,
+#secondary-menu a
+{
+  font-family:'Raleway',sans-serif;
+  text-decoration:none;
+}

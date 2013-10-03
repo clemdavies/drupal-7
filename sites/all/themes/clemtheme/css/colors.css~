@@ -1,0 +1,24 @@
+/*
+  colors.css
+
+  color styles
+*/
+
+body
+{
+  background-color:black;
+}
+#header-wrapper
+{
+  background-color:lightblue;
+}
+#main
+{
+  background-color:lightgreen;
+}
+
+#footer-wrapper
+{
+  background-color:lightblue;
+}
+

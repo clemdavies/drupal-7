@@ -1,0 +1,20 @@
+/*
+  style.css
+
+  fonts styles
+*/
+
+#site-name
+{
+  font-size:2em;
+  font-family:'Audiowide',Georgia,serif;
+   a
+  {
+    text-decoration:none;
+    color:white;
+  }
+}
+#site-slogan
+{
+  font-size:1em;
+}
