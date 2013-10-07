@@ -1,0 +1,78 @@
+<?php
+/*
+  blog_feed_block.module
+*/
+
+
+Class BlogFeed extends PagerDefault{
+
+
+
+
+
+}
+
+
+/**
+ * Implements hook_block_info().
+ */
+function blog_feed_block_block_info() {
+  $blocks = array();
+  $blocks['blog_feed_block'] = array(
+    'info' => t('Blog Feed Block'),
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function blog_feed_block_block_view($delta='') {
+  $block = array();
+
+  switch($delta) {
+    case 'blog_feed_block' :
+      $block['content'] = _blog_feed_block_view();
+      break;
+  }
+
+  return $block;
+}
+
+/**
+ * Custom function to render last 2 blog posts.
+ * Returns a renderable array with the block content.
+ */
+function _blog_feed_block_view(){
+
+
+  global $user;
+  $build = array();
+
+  $query = db_select('node', 'n')->extend('BlogFeed');
+  $nids = $query
+    ->fields('n', array('nid', 'sticky', 'created'))
+    ->condition('type', 'blog')
+    ->condition('status', 1)
+    ->orderBy('created', 'DESC')
+    ->addTag('node_access')
+    ->limit(2)
+    ->execute()
+    ->fetchCol();
+  if (!empty($nids)) {
+    $nodes = node_load_multiple($nids);
+    $build += node_view_multiple($nodes);
+  }
+  else {
+    drupal_set_message(t('No blog entries have been created.'));
+  }
+  drupal_add_feed('blog/feed', t('RSS - blogs'));
+
+  //var_dump($build);
+  return $build;
+}
+
+function blog_feed_callback($form, $form_state){
+
+  //return $blog['content'];
+}

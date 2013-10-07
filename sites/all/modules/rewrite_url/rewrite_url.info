@@ -1,0 +1,3 @@
+name = Url Rewrite
+description = Rewrites some select urls
+core = 7.x

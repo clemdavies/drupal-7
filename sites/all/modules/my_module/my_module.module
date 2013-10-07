@@ -1,0 +1,214 @@
+<?php
+
+
+function my_module_menu() {
+  $items = array();
+  $items['my_module/form'] = array(
+    'title' => t('My form'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('my_module_my_form'),
+    'access arguments' => array('access content'),
+    'description' => t('My form'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+function my_module_my_form($form_state) {
+  $form['name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Name'),
+  );
+ 
+  // Adds a simple submit button that refreshes the form and clears its contents -- this is the default behavior for forms.
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Submit',
+  );
+  return $form;
+}
+
+
+/**
+ *  Initiates building of form
+ */
+function my_module_form() {
+  return drupal_get_form('my_module_feed');
+}
+
+function my_module_feed($form,&$form_state){
+  $default = 'none';
+
+  $form['feed_load_direction'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'feed_load_direction',
+      '#ajax'  => array(
+          'callback' => 'my_module_feed_callback',
+          'wrapper'  => 'blog-feed-block',
+          'method'   => 'replace',
+          'effect'   => 'fade'
+        )
+    );
+
+  $form['feed_load_direction']['prev'] = array(
+      '#title' => t('prev'),
+      '#value' => t('prev'),
+      '#type'  => 'button',
+      '#ajax'  => array(
+          'callback' => 'my_module_feed_callback',
+          'wrapper'  => 'blog-feed-block',
+          'method'   => 'replace',
+          'effect'   => 'fade'
+        )
+    );
+
+  $form['feed_load_direction']['next'] = array(
+      '#title' => t('next'),
+      '#value' => t('next'),
+      '#type'  => 'button',
+      '#ajax'  => array(
+          'callback' => 'my_module_feed_callback',
+          'wrapper'  => 'blog-feed-block',
+          'method'   => 'replace',
+          'effect'   => 'fade'
+        )
+    );
+
+  $form['blog_feed'] = array(
+      '#title' => t('blog feed'),
+      '#prefix' => '<div id="blog-feed-block">',
+      '#suffix' => '</div>',
+    );
+  
+    $form['blog_feed']['content'] = _my_module_load_feed_view();
+  if (!empty($form_state['values']['op'])) {
+    if($form_state['values']['op'] == 'next'){
+      //$form['blog_feed']['content'] = theme('pager');
+
+    }else if($form_state['values']['op'] == 'prev'){
+      //$form['blog_feed']['content'] = theme('pager');
+    }
+  }
+
+  return $form;
+}
+
+function my_module_feed_callback($form, $form_state){
+  //global $pager_total_items;
+
+  //var_dump($pager_total_items);
+    //var_dump('string');
+
+  return $form['blog_feed']['content'] = theme('pager');
+}
+
+/**
+ * Custom function to render last 2 blog posts.
+ * Returns a renderable array with the block content.
+ */
+function _my_module_load_feed_view(){
+  global $user;
+  $build = array();
+
+  $query = db_select('node', 'n')->extend('PagerDefault');
+  $nids = $query
+    ->fields('n', array('nid', 'sticky', 'created'))
+    ->condition('type', 'blog')
+    ->condition('status', 1)
+    ->orderBy('created', 'DESC')
+    ->limit(2)
+    ->addTag('node_access')
+    ->execute()
+    ->fetchCol();
+
+  if (!empty($nids)) {
+    $nodes = node_load_multiple($nids);
+    $build += node_view_multiple($nodes); 
+    /*
+    $build['pager'] = array(
+      '#theme' => 'pager',
+      '#weight' => 5,
+    );
+    */
+    
+    /*
+    still enables access via /home?page=0
+    */
+  }
+  else {
+    drupal_set_message(t('No blog entries have been created.'));
+  }
+  drupal_add_feed('blog/feed', t('RSS - blogs'));
+
+  return $build;
+}
+
+
+
+
+
+
+
+
+
+
+
+/**
+* AJAX-enabled select element causes replacement of a set of checkboxes
+* based on the selection.
+*/
+function my_module_autocheckboxes($form, &$form_state) {
+
+  $default = !empty($form_state['values']['howmany_select']) ? $form_state['values']['howmany_select'] : 1;
+
+  $form['howmany_select'] = array(
+    '#title' => t('How many checkboxes do you want?'),
+    '#type' => 'select',
+    '#options' => array(1 => 1, 2 => 2, 3 => 3, 4 => 4),
+    '#default_value' => $default,
+    '#ajax' => array(
+      'callback' => 'my_module_autocheckboxes_callback',
+      'wrapper' => 'checkboxes-div',
+      'method' => 'replace',
+      'effect' => 'fade',
+    ),
+
+  );
+
+
+  $form['checkboxes_fieldset'] = array(
+    '#title' => t("Generated Checkboxes"),
+    // The prefix/suffix provide the div that we're replacing, named by
+    // #ajax['wrapper'] above.
+    '#prefix' => '<div id="checkboxes-div">',
+    '#suffix' => '</div>',
+    '#type' => 'fieldset',
+    '#description' => t('This is where we get automatically generated checkboxes'),
+  );
+
+  $num_checkboxes = !empty($form_state['values']['howmany_select']) ? $form_state['values']['howmany_select'] : 1;
+  for ($i = 1; $i <= $num_checkboxes; $i++) {
+    $form['checkboxes_fieldset']["checkbox$i"] = array(
+      '#type' => 'checkbox',
+      '#title' => "Checkbox $i",
+    );
+  }
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+  );
+
+  return $form;
+}
+
+
+/**
+* Callback element needs only select the portion of the form to be updated.
+* Since #ajax['callback'] return can be HTML or a renderable array (or an
+* array of commands), we can just return a piece of the form.
+*/
+
+function my_module_autocheckboxes_callback($form, $form_state) {
+  return $form['checkboxes_fieldset'];
+}

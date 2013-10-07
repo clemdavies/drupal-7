@@ -1,0 +1,38 @@
+<?php
+
+/**
+ * creates a path alias by concatenating node type and title.
+ * appending a number if alias already exists.
+ * updates $node with a valid alias.
+ */
+function rewrite_url_node_presave($node){
+  if (strlen($node->path['alias'])){
+    return;
+  }
+  if ( isset($node->type) && isset($node->title)){
+
+    $path = $node->type.'/'.$node->title;
+    $path = str_replace(' ','-',preg_replace('!\s+!', ' ', $path));
+
+    $node->path['alias'] = _rewrite_url_return_alias($path);
+
+  }
+}
+/**
+ * Appends $path with a number if it already exists.
+ * Returns usable path alias.
+ */
+function _rewrite_url_return_alias($path){
+  $alias = $path;
+  for($count = 0; true; $count++ ){
+    if ($count != 0){
+      $alias = $path.'-'.$count;
+    }
+    if (!( drupal_lookup_path('source',$alias,NULL) )) {
+      //path doesnt exist :. create it
+      break;
+    }
+  }
+  return $alias;
+}
+

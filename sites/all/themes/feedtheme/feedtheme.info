@@ -1,6 +1,6 @@
-; clemtheme.info
-name = Clem Theme
-description = My first attempt at theme
+; feedtheme.info
+name = Feed Theme
+description = Controls for ajax activated feeds.
 core = 7.x
 
 stylesheets[all][] = css/layout.css
@@ -9,7 +9,7 @@ stylesheets[all][] = css/colors.css
 
 ; default regions
 regions[sidebar_first] = Left sidebar
-regions[sidebar_second] = Right sidebar
+regions[sidebar_second] = Right sidebar  
 regions[content] = Content
 regions[header] = Header
 regions[footer] = Footer
@@ -17,7 +17,4 @@ regions[highlighted] = Highlighted
 regions[help] = Help
 
 ; my regions
-regions[user_login] = User login
-regions[skills] = Skills
-regions[blog_feed] = Blog Feed
-regions[code_feed] = Code Feed
+regions[feed] = Feed
