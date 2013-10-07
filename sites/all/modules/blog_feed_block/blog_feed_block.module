@@ -3,16 +3,6 @@
   blog_feed_block.module
 */
 
-
-Class BlogFeed extends PagerDefault{
-
-
-
-
-
-}
-
-
 /**
  * Implements hook_block_info().
  */
@@ -45,11 +35,10 @@ function blog_feed_block_block_view($delta='') {
  */
 function _blog_feed_block_view(){
 
-
   global $user;
   $build = array();
 
-  $query = db_select('node', 'n')->extend('BlogFeed');
+  $query = db_select('node', 'n')->extend('PagerDefault');
   $nids = $query
     ->fields('n', array('nid', 'sticky', 'created'))
     ->condition('type', 'blog')
@@ -62,6 +51,11 @@ function _blog_feed_block_view(){
   if (!empty($nids)) {
     $nodes = node_load_multiple($nids);
     $build += node_view_multiple($nodes);
+    
+    $build['pager'] = array(
+      '#theme' => 'pager',
+      '#weight' => 5,
+    );
   }
   else {
     drupal_set_message(t('No blog entries have been created.'));
@@ -74,5 +68,5 @@ function _blog_feed_block_view(){
 
 function blog_feed_callback($form, $form_state){
 
-  //return $blog['content'];
+  return $blog['content'];
 }

@@ -1,12 +1,12 @@
 <?php
 
-
+// implements hook_menu
 function my_module_menu() {
   $items = array();
-  $items['my_module/form'] = array(
-    'title' => t('My form'),
+  $items['my_module/feed'] = array(
+    'title' => t('My form aaa'),
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('my_module_my_form'),
+    'page arguments' => array('my_module_feed'),
     'access arguments' => array('access content'),
     'description' => t('My form'),
     'type' => MENU_CALLBACK,
@@ -14,34 +14,88 @@ function my_module_menu() {
   return $items;
 }
 
-function my_module_my_form($form_state) {
-  $form['name'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Name'),
-  );
- 
-  // Adds a simple submit button that refreshes the form and clears its contents -- this is the default behavior for forms.
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => 'Submit',
-  );
-  return $form;
-}
-
-
-/**
- *  Initiates building of form
- */
-function my_module_form() {
-  return drupal_get_form('my_module_feed');
-}
 
 function my_module_feed($form,&$form_state){
-  $default = 'none';
 
-  $form['feed_load_direction'] = array(
+
+  $form['blog_feed'] = array(
+      '#title' => t('blog feed'),
+      '#prefix' => '<div id="blog-feed-block">',
+      '#suffix' => '</div>',
+    );
+
+  $blogNodes = _load_blog_nodes();
+
+
+  //var_dump($form_state['values']);
+  $reversed = false;
+  $blogNodeViews = array();
+  if ( !empty($form_state['values']['direction']) ) {
+    if($form_state['values']['direction'] == 'next'){
+      $start = $form_state['values']['next_node_value'];
+    }else if($form_state['values']['direction'] == 'prev'){
+      $start = $form_state['values']['prev_node_value'];
+      $blogNodes = array_reverse($blogNodes,true);
+      $reversed = true;
+    }
+  }else{
+    reset($blogNodes);
+    $start = key($blogNodes);
+  }
+
+  $nodesLeft = 2;
+  $nextKey = false;
+  $lastKey = false;
+  $extract = false;
+  $nodesToRender = array();
+  foreach($blogNodes as $key => $value){
+    if (!( $nodesLeft )) {
+      $nextNodeValue = $key;
+      break;
+    }
+    
+    if ($key == $start) {
+      $prevNodeValue = $lastKey;
+      $extract = true;
+    }
+    if ($extract)  {
+      $nodesLeft--;
+      $nodesToRender[$key] = $value;
+    }
+    $lastKey = $key;
+  }
+  //$nextNodeValue = key($blogNodes);
+
+
+  if ($reversed) {
+    $tmp = $prevNodeValue;
+    $prevNodeValue = $nextNodeValue;
+    $nextNodeValue = $tmp;
+  }
+
+  $blogNodeViews += node_view_multiple($nodesToRender);
+
+  $form['blog_feed']['extra'] = array(
+    '#type' => 'fieldset',
+    '#title' => implode(',',array_keys($blogNodes)) 
+    );
+
+  $form['blog_feed']['content'] = $blogNodeViews;
+
+  $form['blog_feed']['prev_node_value'] = array(
+      '#type' => 'hidden',
+      '#value' => $prevNodeValue    
+    );
+
+  $form['blog_feed']['next_node_value'] = array(
+      '#type' => 'hidden',
+      '#value' => $nextNodeValue
+    );
+
+
+  $form['blog_feed']['direction'] = array(
       '#type' => 'fieldset',
-      '#title' => 'feed_load_direction',
+      '#title' => 'feed load direction', 
       '#ajax'  => array(
           'callback' => 'my_module_feed_callback',
           'wrapper'  => 'blog-feed-block',
@@ -50,8 +104,9 @@ function my_module_feed($form,&$form_state){
         )
     );
 
-  $form['feed_load_direction']['prev'] = array(
+  $form['blog_feed']['direction']['prev'] = array(
       '#title' => t('prev'),
+      '#name' => 'direction',
       '#value' => t('prev'),
       '#type'  => 'button',
       '#ajax'  => array(
@@ -62,8 +117,9 @@ function my_module_feed($form,&$form_state){
         )
     );
 
-  $form['feed_load_direction']['next'] = array(
+  $form['blog_feed']['direction']['next'] = array(
       '#title' => t('next'),
+      '#name' => 'direction',
       '#value' => t('next'),
       '#type'  => 'button',
       '#ajax'  => array(
@@ -74,21 +130,15 @@ function my_module_feed($form,&$form_state){
         )
     );
 
-  $form['blog_feed'] = array(
-      '#title' => t('blog feed'),
-      '#prefix' => '<div id="blog-feed-block">',
-      '#suffix' => '</div>',
-    );
-  
-    $form['blog_feed']['content'] = _my_module_load_feed_view();
-  if (!empty($form_state['values']['op'])) {
-    if($form_state['values']['op'] == 'next'){
-      //$form['blog_feed']['content'] = theme('pager');
 
-    }else if($form_state['values']['op'] == 'prev'){
-      //$form['blog_feed']['content'] = theme('pager');
-    }
+  if (!( $prevNodeValue )) {
+    $form['blog_feed']['direction']['prev']['#disabled'] = true;
   }
+  if (!( $nextNodeValue )) {
+    $form['blog_feed']['direction']['next']['#disabled'] = true;
+  }
+
+  
 
   return $form;
 }
@@ -99,48 +149,35 @@ function my_module_feed_callback($form, $form_state){
   //var_dump($pager_total_items);
     //var_dump('string');
 
-  return $form['blog_feed']['content'] = theme('pager');
+  return $form['blog_feed'];
 }
 
 /**
  * Custom function to render last 2 blog posts.
  * Returns a renderable array with the block content.
  */
-function _my_module_load_feed_view(){
+function _load_blog_nodes(){
   global $user;
-  $build = array();
+  //$build = array();
 
-  $query = db_select('node', 'n')->extend('PagerDefault');
+  $query = db_select('node', 'n')->extend('SelectQueryExtender');
   $nids = $query
     ->fields('n', array('nid', 'sticky', 'created'))
     ->condition('type', 'blog')
     ->condition('status', 1)
     ->orderBy('created', 'DESC')
-    ->limit(2)
     ->addTag('node_access')
     ->execute()
     ->fetchCol();
-
   if (!empty($nids)) {
     $nodes = node_load_multiple($nids);
-    $build += node_view_multiple($nodes); 
-    /*
-    $build['pager'] = array(
-      '#theme' => 'pager',
-      '#weight' => 5,
-    );
-    */
-    
-    /*
-    still enables access via /home?page=0
-    */
   }
   else {
     drupal_set_message(t('No blog entries have been created.'));
   }
   drupal_add_feed('blog/feed', t('RSS - blogs'));
 
-  return $build;
+  return $nodes;
 }
 
 

@@ -1,0 +1,3 @@
+name = Ajax Feed
+description = Creates a feed from nodes and paginates via ajax calls.
+core = 7.x

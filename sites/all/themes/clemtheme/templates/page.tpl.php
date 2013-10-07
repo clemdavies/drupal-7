@@ -133,7 +133,14 @@
 
       <?php print render($page['content']); ?>
 
+
       <?php if ($page['blog_feed']): ?>
+        <?php print render($page['blog_feed']); ?>
+      <?php endif; ?>
+
+      
+
+      <?php if ($page['blog_feed'] && false): ?>
       <div id='blog_feed_container'>
         <?php 
           /*
@@ -144,6 +151,7 @@
           */
         ?>
         <?php
+        /*
           $prev = array(
             '#type' => 'button',
             '#value'=>t('prev'),
@@ -151,7 +159,7 @@
             '#attributes'=>array('disabled'=>'disabled')
             );
 
-          echo drupal_render($prev);
+          echo render($prev);
 
           print render($page['blog_feed']);
 
@@ -169,6 +177,7 @@
             );
 
           echo drupal_render($next);
+          */
         ?>
       </div><!-- /#blog_feed_container -->
       <?php endif; ?>
