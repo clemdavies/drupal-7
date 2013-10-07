@@ -17,6 +17,7 @@ function my_module_menu() {
 
 function my_module_feed($form,&$form_state){
 
+  $nodeCount = 2;
 
   $form['blog_feed'] = array(
       '#title' => t('blog feed'),
@@ -26,15 +27,13 @@ function my_module_feed($form,&$form_state){
 
   $blogNodes = _load_blog_nodes();
 
-
-  //var_dump($form_state['values']);
   $reversed = false;
-  $blogNodeViews = array();
+  $blogViews = array();
   if ( !empty($form_state['values']['direction']) ) {
     if($form_state['values']['direction'] == 'next'){
-      $start = $form_state['values']['next_node_value'];
+      $start = $form_state['values']['next_node_key'];
     }else if($form_state['values']['direction'] == 'prev'){
-      $start = $form_state['values']['prev_node_value'];
+      $start = $form_state['values']['prev_node_key'];
       $blogNodes = array_reverse($blogNodes,true);
       $reversed = true;
     }
@@ -43,56 +42,21 @@ function my_module_feed($form,&$form_state){
     $start = key($blogNodes);
   }
 
-  $nodesLeft = 2;
-  $nextKey = false;
-  $lastKey = false;
-  $extract = false;
-  $nodesToRender = array();
-  foreach($blogNodes as $key => $value){
-    if (!( $nodesLeft )) {
-      $nextNodeValue = $key;
-      break;
-    }
-    
-    if ($key == $start) {
-      $prevNodeValue = $lastKey;
-      $extract = true;
-    }
-    if ($extract)  {
-      $nodesLeft--;
-      $nodesToRender[$key] = $value;
-    }
-    $lastKey = $key;
-  }
-  //$nextNodeValue = key($blogNodes);
+  $current = extractCurrentNodes($blogNodes,$start,$nodeCount,$reversed);
 
+  $blogViews += node_view_multiple($current['nodes']);
 
-  if ($reversed) {
-    $tmp = $prevNodeValue;
-    $prevNodeValue = $nextNodeValue;
-    $nextNodeValue = $tmp;
-  }
+  $form['blog_feed']['content'] = $blogViews;
 
-  $blogNodeViews += node_view_multiple($nodesToRender);
-
-  $form['blog_feed']['extra'] = array(
-    '#type' => 'fieldset',
-    '#title' => implode(',',array_keys($blogNodes)) 
-    );
-
-  $form['blog_feed']['content'] = $blogNodeViews;
-
-  $form['blog_feed']['prev_node_value'] = array(
+  $form['blog_feed']['prev_node_key'] = array(
       '#type' => 'hidden',
-      '#value' => $prevNodeValue    
+      '#value' => $current['prevKey']
     );
 
-  $form['blog_feed']['next_node_value'] = array(
+  $form['blog_feed']['next_node_key'] = array(
       '#type' => 'hidden',
-      '#value' => $nextNodeValue
+      '#value' => $current['nextKey']
     );
-
-
   $form['blog_feed']['direction'] = array(
       '#type' => 'fieldset',
       '#title' => 'feed load direction', 
@@ -131,10 +95,10 @@ function my_module_feed($form,&$form_state){
     );
 
 
-  if (!( $prevNodeValue )) {
+  if (!( $current['prevKey'] )) {
     $form['blog_feed']['direction']['prev']['#disabled'] = true;
   }
-  if (!( $nextNodeValue )) {
+  if (!( $current['nextKey'] )) {
     $form['blog_feed']['direction']['next']['#disabled'] = true;
   }
 
@@ -143,12 +107,49 @@ function my_module_feed($form,&$form_state){
   return $form;
 }
 
+/*
+  Iterates over an array starting at a given key, extracting values held while maintaining keys.
+  Retrieves keys on either side of extracted data set or false if not possible.
+
+  Array $nodes Associative array with node id as keys to nodes as values.
+  int   $start Node id to start at.
+  int   $nodeCount Number of elements to extract.
+  bool  $reversed Direction array is iterating. For going backward in a feed.
+
+  returns an associative array containing nodes to render, next node key, and previous node key.
+*/
+
+function extractCurrentNodes($nodes,$start,$nodeCount,$reversed = false){
+  $result['nextKey'] = false;
+  $result['prevKey'] = false;
+  $lastKey = false;
+  $extract = false;
+  foreach($nodes as $key => $value){
+    if (!( $nodeCount )) {
+      $result['nextKey'] = $key;
+      break;
+    }
+    
+    if ($key == $start) {
+      $result['prevKey'] = $lastKey;
+      $extract = true;
+    }
+    if ($extract)  {
+      $nodeCount--;
+      $result['nodes'][$key] = $value;
+    }
+    $lastKey = $key;
+  }
+
+  if ($reversed) {
+    $tmp = $result['prevKey'];
+    $result['prevKey'] = $result['nextKey'];
+    $result['nextKey'] = $tmp;
+  }
+  return $result;
+}
+
 function my_module_feed_callback($form, $form_state){
-  //global $pager_total_items;
-
-  //var_dump($pager_total_items);
-    //var_dump('string');
-
   return $form['blog_feed'];
 }
 
@@ -158,7 +159,6 @@ function my_module_feed_callback($form, $form_state){
  */
 function _load_blog_nodes(){
   global $user;
-  //$build = array();
 
   $query = db_select('node', 'n')->extend('SelectQueryExtender');
   $nids = $query
