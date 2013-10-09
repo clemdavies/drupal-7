@@ -1,5 +1,11 @@
 <?php
 
+
+/*
+  my_module/feed/my_module_feed
+
+*/
+
 // implements hook_menu
 function my_module_menu() {
   $items = array();
@@ -17,12 +23,13 @@ function my_module_menu() {
 
 function my_module_feed($form,&$form_state){
 
+
   $nodeCount = 2;
 
   $form['blog_feed'] = array(
       '#title' => t('blog feed'),
       '#prefix' => '<div id="blog-feed-block">',
-      '#suffix' => '</div>',
+      '#suffix' => '</div>'
     );
 
   $blogNodes = _load_blog_nodes();
@@ -59,7 +66,7 @@ function my_module_feed($form,&$form_state){
     );
   $form['blog_feed']['direction'] = array(
       '#type' => 'fieldset',
-      '#title' => 'feed load direction', 
+      '#title' => 'feed load direction',
       '#ajax'  => array(
           'callback' => 'my_module_feed_callback',
           'wrapper'  => 'blog-feed-block',
@@ -102,7 +109,6 @@ function my_module_feed($form,&$form_state){
     $form['blog_feed']['direction']['next']['#disabled'] = true;
   }
 
-  
 
   return $form;
 }
@@ -151,7 +157,7 @@ function extractCurrentNodes($nodes,$start,$nodeCount,$reversed = false){
 }
 
 function my_module_feed_callback($form, $form_state){
-  return $form['blog_feed'];
+  return $form;
 }
 
 /**
