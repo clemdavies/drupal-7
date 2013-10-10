@@ -1,0 +1,314 @@
+<?php
+/*
+  feed_block.module
+*/
+
+
+/**
+ * Configuration form for creating ajax block types and regions.
+ */
+function ajax_feed_admin(){
+  // block name,
+  // region
+  // page
+  // visibility
+
+
+  /* 
+    for code feed. I want to extract data from github.
+    option a : existing content type
+    option b : username from github. for extracting feed.
+    option c : ?
+  */
+
+}
+/**
+ *Implements hook_menu
+ */
+function ajax_feed_menu(){
+
+  $items = array();
+
+
+  $items['admin/config/ajax_feed'] = array(
+    'title' => 'Ajax Feed module settings',
+    'description' => 'Create ajax feed blocks and regions from available content types.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ajax_feed_admin'),
+    'access arguments' => array('administer ajax_feed settings'),
+    'type' => MENU_NORMAL_ITEM
+   );
+
+  return $items;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function ajax_feed_block_info() {
+
+// what settings will be pulled from config menu
+// default is empty.
+  $names = array(
+      'code'=>array(
+          'pages'=>'home',
+          'visibility'=>BLOCK_VISIBILITY_LISTED
+        ),
+      'blog'=>array(
+          'pages'=>'home',
+          'visibility'=>BLOCK_VISIBILITY_LISTED
+        )
+    );
+
+  $blocks = array();
+
+  foreach($names as $name => $settings){
+    $blocks[$name.'_ajax_feed_block'] = array(
+      'info' => t(ucfirst($name).' ajax feed'),
+      'status'=> 1,
+      'region' => $name.'_feed',
+      'visibility' => $settings['visibility'],
+      'pages' => $settings['pages'],
+      'cache' => DRUPAL_NO_CACHE
+    );
+  }
+
+  /*
+  $blocks['blog_ajax_feed_block'] = array(
+      'info' => t('Blog ajax feed'),
+      'status'=> 1,
+      'region' => 'blog_feed',
+      'visibility' => BLOCK_VISIBILITY_LISTED,
+      'pages' => 'home',
+      'cache' => DRUPAL_NO_CACHE
+    );
+    */
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function ajax_feed_block_view($delta='') {
+  $names = array('blog','code');
+  global $feed_name;
+  $block = array();
+
+  foreach($names as $name){
+    switch($delta) {
+      case $name.'_ajax_feed_block' :
+        $feed_name = $name;
+        $block['content'] = drupal_get_form('_feed_block_view');
+        break;
+    }
+  }
+  return $block;
+}
+/*
+  Render array for top level of feed.
+*/
+function _form_feed(){
+  global $feed_name;
+  return array(
+      '#title' => t($feed_name.' feed'),
+      '#prefix' => '<div id="'.$feed_name.'-feed-block">',
+      '#suffix' => '</div>',
+    );
+}
+/*
+  Render array for previous button.
+*/
+function _form_feed_prev(){
+  global $feed_name;
+  return array(
+        '#prefix' => '<div id="'.$feed_name.'-feed-prev-container">',
+        '#suffix' => '</div>',
+        '#title' => t('prev'),
+        '#name' => 'direction',
+        '#value' => t('prev'),
+        '#type'  => 'button', 
+        '#disabled'=>true,
+        '#ajax'  => array(
+            'callback' => 'ajax_feed_callback',
+            'wrapper'  => $feed_name.'-feed-block',
+            'method'   => 'replace',
+            'effect'   => 'fade'
+          )
+    );    
+}
+/*
+  Render array for next button.
+*/
+function _form_feed_next(){
+  global $feed_name;
+  return array(
+    '#prefix' => '<div id="'.$feed_name.'-feed-next-container">',
+    '#suffix' => '</div>',
+    '#title' => t('next'),
+    '#name' => 'direction',
+    '#value' => t('next'),
+    '#type'  => 'button',
+    '#disabled'=>true,
+    '#ajax'  => array(
+        'callback' => 'ajax_feed_callback',
+        'wrapper'  => $feed_name.'-feed-block',
+        'method'   => 'replace',
+        'effect'   => 'fade'
+      )
+  );    
+}
+
+/*
+  Render array for no entries found in feed.
+*/
+function _no_nodes(){
+  global $feed_name;
+  return array(
+    '#prefix' => '<div id="'.$feed_name.'-feed-empty">no '.$feed_name.' entries',
+    '#suffix' => '</div>',
+    );
+}
+
+/*
+  Controls setting up of feed.
+*/
+function _feed_block_view($form,&$form_state){
+  global $feed_name;
+  if (!empty($form_state['values']['feed_name'])) {
+    $feed_name = $form_state['values']['feed_name'];
+  }
+
+  // structure
+  $form[$feed_name.'_feed'] = _form_feed();
+  $form[$feed_name.'_feed']['feed_name'] = array(
+      '#type' => 'hidden',
+      '#value' => $feed_name
+    ); 
+
+  $nodeCount = 2;
+  $nodes = _load_nodes($feed_name);
+  if (!( $nodes )){
+    $form[$feed_name.'_feed']['content'] = _no_nodes();
+    return $form;
+  }
+
+  $form[$feed_name.'_feed']['prev'] = _form_feed_prev();
+
+  $reversed = false;
+  $views = array();
+  if ( !empty($form_state['values']['direction']) ) {
+    if($form_state['values']['direction'] == 'next'){
+      $start = $form_state['values']['next_node_key'];
+    }else if($form_state['values']['direction'] == 'prev'){
+      $start = $form_state['values']['prev_node_key'];
+      $nodes = array_reverse($nodes,true);
+      $reversed = true;
+    }
+  }else{
+    reset($nodes);
+    $start = key($nodes);
+  }
+  $current = _feed_block_extract_nodes($nodes,$start,$nodeCount,$reversed);
+  $views += node_view_multiple($current['nodes']);
+
+  $form[$feed_name.'_feed']['content'] = $views;
+  $form[$feed_name.'_feed']['next'] = _form_feed_next();
+
+  $form[$feed_name.'_feed']['prev_node_key'] = array(
+      '#type' => 'hidden',
+      '#value' => $current['prevKey']
+    );
+
+  $form[$feed_name.'_feed']['next_node_key'] = array(
+      '#type' => 'hidden',
+      '#value' => $current['nextKey']
+    );  
+
+  if ( $current['prevKey'] ) {
+    $form[$feed_name.'_feed']['prev']['#disabled'] = false;
+  }
+  if ( $current['nextKey'] ) {
+    $form[$feed_name.'_feed']['next']['#disabled'] = false;
+  }
+  return $form;
+  
+}
+
+/*
+  Iterates over an array starting at a given key, extracting values held while maintaining keys.
+  Retrieves keys on either side of extracted data set or false if not possible.
+
+  Array $nodes Associative array with node id as keys to nodes as values.
+  int   $start Node id to start at.
+  int   $nodeCount Number of elements to extract.
+  bool  $reversed Direction array is iterating. For going backward in a feed.
+
+  returns an associative array containing nodes to render, next node key, and previous node key.
+*/
+
+function _feed_block_extract_nodes($nodes,$start,$nodeCount,$reversed = false){
+  $result['nextKey'] = false;
+  $result['prevKey'] = false;
+  $lastKey = false;
+  $extract = false;
+  foreach($nodes as $key => $value){
+    if (!( $nodeCount )) {
+      $result['nextKey'] = $key;
+      break;
+      
+    }
+    
+    if ($key == $start) {
+      $result['prevKey'] = $lastKey;
+      $extract = true;
+    }
+    if ($extract)  {
+      $nodeCount--;
+      $result['nodes'][$key] = $value;
+    }
+    $lastKey = $key;
+  }
+
+  if ($reversed) {
+    $tmp = $result['prevKey'];
+    $result['prevKey'] = $result['nextKey'];
+    $result['nextKey'] = $tmp;
+    $result['nodes'] = array_reverse($result['nodes'],true);
+  }
+  return $result; 
+}
+/*
+  Callback function for ajax requests.
+*/
+function ajax_feed_callback($form, $form_state){
+  global $feed_name;
+  return $form[$feed_name.'_feed'];
+}
+
+
+/**
+ * Queries database to extract nodes of a given type
+ * returns nodes associative array
+ */
+function _load_nodes($type){
+  $query = db_select('node', 'n')->extend('SelectQueryExtender');
+  $nids = $query
+    ->fields('n', array('nid', 'sticky', 'created'))
+    ->condition('type', $type)
+    ->condition('status', 1)
+    ->orderBy('created', 'DESC')
+    ->addTag('node_access')
+    ->execute()
+    ->fetchCol();
+  if (!empty($nids)) {
+    $nodes = node_load_multiple($nids);
+  }
+  else {
+    return false;
+    //drupal_set_message(t('No '.$type.' entries have been created.'));
+  }
+  //drupal_add_feed($type.'/feed', t('RSS - '.$type.'s'));
+
+  return $nodes;
+}

@@ -1,0 +1,3 @@
+name = Ajax feed
+description = Creates a feed block showing the most recent posts for a given type. Designed for the front page.
+core = 7.x

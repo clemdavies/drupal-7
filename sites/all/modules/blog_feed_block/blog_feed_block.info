@@ -1,3 +1,0 @@
-name = Blog feed
-description = Creates a block showing the most recent blog posts. Designed for the front page.
-core = 7.x

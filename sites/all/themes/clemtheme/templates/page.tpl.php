@@ -138,48 +138,8 @@
         <?php print render($page['blog_feed']); ?>
       <?php endif; ?>
 
-      
-
-      <?php if ($page['blog_feed'] && false): ?>
-      <div id='blog_feed_container'>
-        <?php 
-          /*
-            <?php foreach($page['blog_feed']['blog_feed_block_blog_feed_block']['nodes'] as $key => $value): ?>
-            <?php var_dump($key); ?>
-            <?php var_dump($value); ?>
-            <?php endforeach;?>
-          */
-        ?>
-        <?php
-        /*
-          $prev = array(
-            '#type' => 'button',
-            '#value'=>t('prev'),
-            '#id'=>'blog_feed_prev',
-            '#attributes'=>array('disabled'=>'disabled')
-            );
-
-          echo render($prev);
-
-          print render($page['blog_feed']);
-
-          $next = array(
-            '#type' => 'button',
-            '#value'=>t('next'),
-            '#id'=>'blog_feed_next',
-            '#attributes'=>array(),
-            '#ajax' => array(
-                'callback' => 'some_callback_function',
-                'wrapper' => 'blog_feed_container',
-                'method' => 'replace',
-                'effect' => 'fade'
-              )
-            );
-
-          echo drupal_render($next);
-          */
-        ?>
-      </div><!-- /#blog_feed_container -->
+      <?php if ($page['code_feed']): ?>
+        <?php print render($page['code_feed']); ?>
       <?php endif; ?>
 
 

@@ -19,5 +19,5 @@ regions[help] = Help
 ; my regions
 regions[user_login] = User login
 regions[skills] = Skills
-regions[blog_feed] = Blog Feed
-regions[code_feed] = Code Feed
+regions[blog_feed] = Blog feed
+regions[code_feed] = Code feed

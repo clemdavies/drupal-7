@@ -53,29 +53,7 @@ function my_module_feed($form,&$form_state){
 
   $blogViews += node_view_multiple($current['nodes']);
 
-  $form['blog_feed']['content'] = $blogViews;
-
-  $form['blog_feed']['prev_node_key'] = array(
-      '#type' => 'hidden',
-      '#value' => $current['prevKey']
-    );
-
-  $form['blog_feed']['next_node_key'] = array(
-      '#type' => 'hidden',
-      '#value' => $current['nextKey']
-    );
-  $form['blog_feed']['direction'] = array(
-      '#type' => 'fieldset',
-      '#title' => 'feed load direction',
-      '#ajax'  => array(
-          'callback' => 'my_module_feed_callback',
-          'wrapper'  => 'blog-feed-block',
-          'method'   => 'replace',
-          'effect'   => 'fade'
-        )
-    );
-
-  $form['blog_feed']['direction']['prev'] = array(
+  $form['blog_feed']['prev'] = array(
       '#title' => t('prev'),
       '#name' => 'direction',
       '#value' => t('prev'),
@@ -87,8 +65,32 @@ function my_module_feed($form,&$form_state){
           'effect'   => 'fade'
         )
     );
+  $form['blog_feed']['content'] = $blogViews;
 
-  $form['blog_feed']['direction']['next'] = array(
+  $form['blog_feed']['prev_node_key'] = array(
+      '#type' => 'hidden',
+      '#value' => $current['prevKey']
+    );
+
+  $form['blog_feed']['next_node_key'] = array(
+      '#type' => 'hidden',
+      '#value' => $current['nextKey']
+    );
+  /*
+  $form['blog_feed']['direction'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'feed load direction',
+      '#ajax'  => array(
+          'callback' => 'my_module_feed_callback',
+          'wrapper'  => 'blog-feed-block',
+          'method'   => 'replace',
+          'effect'   => 'fade'
+        )
+    );
+    */
+
+
+  $form['blog_feed']['next'] = array(
       '#title' => t('next'),
       '#name' => 'direction',
       '#value' => t('next'),
@@ -103,12 +105,11 @@ function my_module_feed($form,&$form_state){
 
 
   if (!( $current['prevKey'] )) {
-    $form['blog_feed']['direction']['prev']['#disabled'] = true;
+    $form['blog_feed']['prev']['#disabled'] = true;
   }
   if (!( $current['nextKey'] )) {
-    $form['blog_feed']['direction']['next']['#disabled'] = true;
+    $form['blog_feed']['next']['#disabled'] = true;
   }
-
 
   return $form;
 }
@@ -152,12 +153,13 @@ function extractCurrentNodes($nodes,$start,$nodeCount,$reversed = false){
     $tmp = $result['prevKey'];
     $result['prevKey'] = $result['nextKey'];
     $result['nextKey'] = $tmp;
+    $result['nodes'] = array_reverse($result['nodes'],true);
   }
   return $result;
 }
 
 function my_module_feed_callback($form, $form_state){
-  return $form;
+  return $form['blog_feed'];
 }
 
 /**
